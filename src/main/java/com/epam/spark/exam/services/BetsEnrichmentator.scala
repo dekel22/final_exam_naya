@@ -29,8 +29,8 @@ class BetsEnrichmentator(@transient userService: UserService, @transient betsRep
   val win: String ="win"
   val bet: String = "bet"
   val CONVERSION_RATE: Double = 1.1
-  val betsInDollar = "bet in dollar"
-  val winInDollar = "win in dollar"
+  val betsInDollar = "betInDollar"
+  val winInDollar = "winInDollar"
   val eventCurrencyCode = "eventCurrencyCode"
 
 
@@ -40,8 +40,8 @@ class BetsEnrichmentator(@transient userService: UserService, @transient betsRep
     //אני בוחר להגדיל את הטבלה ולהאט ביצועים בשביל קוד קריא יתר
     import com.epam.spark.exam.model.UserAdapter._
     val betsDS = betsRepo.readBets()
-    val winsInDollarsDS=betsDS.withColumn(winInDollar, when(col(eventCurrencyCode).equalTo(EUR), (col(win).multiply(CONVERSION_RATE))).otherwise(col(bet)).cast("decimal(38,0)"))
-    val betsInDollarDS=winsInDollarsDS.withColumn(betsInDollar, when(col(eventCurrencyCode).equalTo(EUR), (col(bet).multiply(CONVERSION_RATE))).otherwise(col(bet)).cast("decimal(38,0)"))
+    val winsInDollarsDS=betsDS.withColumn(winInDollar, when(col(eventCurrencyCode).equalTo(EUR), (col(win).multiply(CONVERSION_RATE))).otherwise(col(bet)).cast("decimal(6,2)"))
+    val betsInDollarDS=winsInDollarsDS.withColumn(betsInDollar, when(col(eventCurrencyCode).equalTo(EUR), (col(bet).multiply(CONVERSION_RATE))).otherwise(col(bet)).cast("decimal(6,2)"))
     val users = userService.getAllUsers
     val usersDf = sparkSession.createDataFrame(users)
     val allBets = betsInDollarDS.join(usersDf, betsInDollarDS("userId") === usersDf("id")).drop("id")
@@ -62,7 +62,7 @@ class BetsEnrichmentator(@transient userService: UserService, @transient betsRep
   def winRatioToHigh(from:String, to:String): Dataset[Row] = {
     val sums=workingBets.filter("eventTime > date'" + from + "' and eventTime < date'" + to + "'").
       groupBy(userId).sum(winInDollar,betsInDollar).orderBy(col(userId));
-    return(sums.withColumn("ratio", col("sum(win in dollar)") / col("sum(bet in dollar)")).
+    return(sums.withColumn("ratio", col("sum(winInDollar)") / col("sum(betInDollar)")).
       filter(col("ratio")>10));
   }
 

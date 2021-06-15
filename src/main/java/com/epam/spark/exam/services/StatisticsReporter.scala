@@ -21,8 +21,8 @@ class StatisticsReporter {
   val win: String ="win"
   val bet: String = "bet"
   val CONVERSION_RATE: Double = 1.1
-  val betsInDollar = "bet in dollar"
-  val winInDollar = "win in dollar"
+  val betsInDollar = "betInDollar"
+  val winInDollar = "winInDollar"
   val eventCurrencyCode = "eventCurrencyCode"
   var gamesStats: Dataset[Row] = null
   private var profit: String = "profit"
