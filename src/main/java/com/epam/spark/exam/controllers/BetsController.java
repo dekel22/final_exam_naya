@@ -41,6 +41,8 @@ public class BetsController {
 
 
     @GetMapping("long_connection")//{fromDate}/{toDate}")
+
+
     public ResponseEntity<List<BetDisplay>> longConnection(){//@PathVariable String from, @PathVariable String to) {
         return(ResponseEntity.ok(fraudReporter.longConnection(from, to)));
     }
