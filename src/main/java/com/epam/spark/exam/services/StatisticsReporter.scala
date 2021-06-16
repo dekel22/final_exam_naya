@@ -4,9 +4,9 @@ import org.apache.spark.sql.functions.{avg, col, max, min}
 import org.apache.spark.sql.{Dataset, Row}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import com.epam.spark.exam.model.DataRawExtend._
 @Component
 class StatisticsReporter {
-
   @Autowired
   val bets :BetsEnrichmentator=null;
 
@@ -27,21 +27,28 @@ class StatisticsReporter {
   var gamesStats: Dataset[Row] = null
   private var profit: String = "profit"
 
-  def gameMaxAndMinForWinAndBet(from:String, to:String,game:String): Dataset[Row] = {
-    val gameBets=bets.workingBets.filter(col(gameName)=== game).filter("eventTime > date'" + from + "' and eventTime < date'" + to + "'")
-    gameBets.agg(min(col(betsInDollar)),max(col(betsInDollar)),avg(col(betsInDollar)),min(col(winInDollar)),max(col(winInDollar)),avg(col(winInDollar)))
+
+
+  def gameMaxAndMinForWinAndBet(from:String, to:String,game:String):Array[String]= {
+     bets.workingBets.filter(col(gameName)=== game).filterByDates(from,to).
+      agg(min(col(betsInDollar)),max(col(betsInDollar)),avg(col(betsInDollar)),
+      min(col(winInDollar)),max(col(winInDollar)),avg(col(winInDollar))).asGameStat().toJsonStrings()
   }
 
-
-  def gameMaxAndMinForProfit(from:String, to:String, game:String): Dataset[Row] = {
-    val gameBets=bets.workingBets.filter(col(gameName)=== game).filter("eventTime > date'" + from + "' and eventTime < date'" + to + "'")
-    gameBets.agg(min(profit),max(profit))
+  def gameMaxAndMinForProfit(from:String, to:String, game:String): Array[String]= {
+    bets.workingBets.filter(col(gameName)=== game).filterByDates(from,to).agg(min(profit).alias("min_profit"),
+      max(profit).alias("max_profit"),avg(profit).alias("avg_profit")).asGameStat().toJsonStrings()
   }
 
-  def allGamesMaxAndMinForProfit(from:String, to:String): Dataset[Row] = {
-    gamesStats=bets.workingBets.filter("eventTime > date'" + from + "' and eventTime < date'" + to + "'")
-    .agg(col(gameName),min(col(betsInDollar)),max(col(betsInDollar)),avg(col(betsInDollar)),min(col(winInDollar)),max(col(winInDollar)),avg(col(winInDollar)),min(profit),max(profit)).persist()
-    gamesStats
+  def allGamesMaxAndMinForProfit(from:String, to:String): Array[String] = {
+      gamesStats=bets.workingBets.filterByDates(from,to).groupBy(gameName).agg(min(col(betsInDollar)).
+      alias("min_bet"),max(col(betsInDollar)).alias("max_bet"),avg(col(betsInDollar)).alias("avg_bet"),
+      min(col(winInDollar)).alias("min_win"),max(col(winInDollar)).alias("max_win"),
+      avg(col(winInDollar)).alias("avg_win"),min(profit).alias("min_profit"),
+      max(profit).alias("max_profit")).persist()
+     gamesStats.asGameStat().toJsonStrings()
+
+
   }
 
 }
